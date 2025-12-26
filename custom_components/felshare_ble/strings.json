@@ -1,0 +1,14 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Add Felshare Diffuser (Bluetooth)",
+        "description": "Pick a discovered device or paste its BLE address.",
+        "data": {
+          "address": "BLE address",
+          "name": "Name"
+        }
+      }
+    }
+  }
+}
