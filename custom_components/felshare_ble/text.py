@@ -13,8 +13,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     async_add_entities([FelshareOilNameText(coordinator)])
 
 class FelshareOilNameText(FelshareEntity, TextEntity):
-    _attr_native_min = 0
-    _attr_native_max = 64
+    _attr_min = 0
+    _attr_max = 64
     _attr_pattern = r"^[\x20-\x7E]*$"  # printable ASCII only
 
     def __init__(self, coordinator):

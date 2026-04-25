@@ -128,6 +128,7 @@ class FelshareBleConnection:
 
     async def write(self, payload: bytes, response: bool = False) -> None:
         await self.ensure_connected()
-        assert self._client is not None
         async with self._lock:
+            if self._client is None:
+                raise BleakError("BLE client is not connected")
             await self._client.write_gatt_char(NUS_TX_CHAR_UUID, payload, response=response)
