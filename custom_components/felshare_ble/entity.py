@@ -5,6 +5,19 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .coordinator import FelshareCoordinator
 from .const import DOMAIN
+from .protocol import parse_hhmm
+
+
+def current_work_fields(data: dict) -> tuple[int, int, int, int, bool, int, int, int]:
+    """Extract current work-schedule fields from coordinator data with safe defaults."""
+    sh, sm = parse_hhmm(data.get("work_start", "09:00"))
+    eh, em = parse_hhmm(data.get("work_end", "21:00"))
+    enabled = bool(data.get("work_enabled", True))
+    daymask = int(data.get("work_days_mask", 0x7F))
+    run_s = int(data.get("work_run_s", 30))
+    stop_s = int(data.get("work_stop_s", 280))
+    return sh, sm, eh, em, enabled, daymask, run_s, stop_s
+
 
 class FelshareEntity(CoordinatorEntity[FelshareCoordinator]):
     _attr_has_entity_name = True

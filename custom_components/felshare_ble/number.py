@@ -7,17 +7,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.const import UnitOfTime
 
 from .const import DOMAIN
-from .entity import FelshareEntity
-from .protocol import parse_hhmm
-
-def _current_work_fields(data: dict):
-    sh, sm = parse_hhmm(data.get("work_start", "09:00"))
-    eh, em = parse_hhmm(data.get("work_end", "21:00"))
-    enabled = bool(data.get("work_enabled", True))
-    daymask = int(data.get("work_days_mask", 0x7F))
-    run_s = int(data.get("work_run_s", 30))
-    stop_s = int(data.get("work_stop_s", 280))
-    return sh, sm, eh, em, enabled, daymask, run_s, stop_s
+from .entity import FelshareEntity, current_work_fields
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
     coordinator = hass.data[DOMAIN][entry.entry_id]
@@ -97,7 +87,7 @@ class FelshareWorkRunNumber(FelshareEntity, NumberEntity):
 
     async def async_set_native_value(self, value: float):
         data = self.coordinator.data or {}
-        sh, sm, eh, em, enabled, daymask, _run_s, stop_s = _current_work_fields(data)
+        sh, sm, eh, em, enabled, daymask, _run_s, stop_s = current_work_fields(data)
         await self.coordinator.async_set_workmode(sh, sm, eh, em, enabled, daymask, int(value), int(stop_s))
 
 class FelshareWorkStopNumber(FelshareEntity, NumberEntity):
@@ -115,5 +105,5 @@ class FelshareWorkStopNumber(FelshareEntity, NumberEntity):
 
     async def async_set_native_value(self, value: float):
         data = self.coordinator.data or {}
-        sh, sm, eh, em, enabled, daymask, run_s, _stop_s = _current_work_fields(data)
+        sh, sm, eh, em, enabled, daymask, run_s, _stop_s = current_work_fields(data)
         await self.coordinator.async_set_workmode(sh, sm, eh, em, enabled, daymask, int(run_s), int(value))

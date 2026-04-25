@@ -6,17 +6,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
 from .const import DOMAIN, DAY_BITS, UI_DAY_ORDER
-from .entity import FelshareEntity
-from .protocol import parse_hhmm
-
-def _current_work_fields(data: dict) -> tuple[int,int,int,int,bool,int,int,int]:
-    sh, sm = parse_hhmm(data.get("work_start", "09:00"))
-    eh, em = parse_hhmm(data.get("work_end", "21:00"))
-    enabled = bool(data.get("work_enabled", True))
-    daymask = int(data.get("work_days_mask", 0x7F))
-    run_s = int(data.get("work_run_s", 30))
-    stop_s = int(data.get("work_stop_s", 280))
-    return sh, sm, eh, em, enabled, daymask, run_s, stop_s
+from .entity import FelshareEntity, current_work_fields
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
     coordinator = hass.data[DOMAIN][entry.entry_id]
@@ -59,12 +49,12 @@ class FelshareWorkEnabledSwitch(FelshareEntity, SwitchEntity):
 
     async def async_turn_on(self, **kwargs):
         data = self.coordinator.data or {}
-        sh, sm, eh, em, _enabled, daymask, run_s, stop_s = _current_work_fields(data)
+        sh, sm, eh, em, _enabled, daymask, run_s, stop_s = current_work_fields(data)
         await self.coordinator.async_set_workmode(sh, sm, eh, em, True, daymask, run_s, stop_s)
 
     async def async_turn_off(self, **kwargs):
         data = self.coordinator.data or {}
-        sh, sm, eh, em, _enabled, daymask, run_s, stop_s = _current_work_fields(data)
+        sh, sm, eh, em, _enabled, daymask, run_s, stop_s = current_work_fields(data)
         await self.coordinator.async_set_workmode(sh, sm, eh, em, False, daymask, run_s, stop_s)
 
 class FelshareWorkDaySwitch(FelshareEntity, SwitchEntity):
@@ -80,7 +70,7 @@ class FelshareWorkDaySwitch(FelshareEntity, SwitchEntity):
 
     async def _set_day(self, on: bool):
         data = self.coordinator.data or {}
-        sh, sm, eh, em, enabled, daymask, run_s, stop_s = _current_work_fields(data)
+        sh, sm, eh, em, enabled, daymask, run_s, stop_s = current_work_fields(data)
         bit = DAY_BITS[self._day_key]
         if on:
             daymask |= (1 << bit)

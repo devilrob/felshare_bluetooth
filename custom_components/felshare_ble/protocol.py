@@ -34,9 +34,12 @@ def clamp_int(v: int, lo: int, hi: int) -> int:
     return v
 
 def parse_hhmm(s: str) -> tuple[int, int]:
-    s = (s or "").strip()
-    hh, mm = s.split(":")
-    return int(hh), int(mm)
+    try:
+        s = (s or "").strip()
+        hh, mm = s.split(":")
+        return int(hh), int(mm)
+    except (ValueError, AttributeError):
+        return (0, 0)
 
 def bytes_workmode(sh: int, sm: int, eh: int, em: int, enabled: bool, daymask: int, run_s: int, stop_s: int) -> bytes:
     flag = (0x80 if enabled else 0x00) | (daymask & 0x7F)
@@ -117,7 +120,7 @@ def decode_frame(frame: bytes) -> dict[str, Any]:
         cap = st.get("oil_capacity_ml")
         rem = st.get("oil_remain_ml")
         if isinstance(cap, int) and cap > 0 and isinstance(rem, int):
-            st["oil_level_pct"] = int((rem * 100) / cap)
+            st["oil_level_pct"] = clamp_int(int((rem * 100) / cap), 0, 100)
 
         raw_name = frame[24:] if len(frame) > 24 else b""
         name = sanitize_ascii_label(raw_name)
