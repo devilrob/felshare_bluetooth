@@ -6,6 +6,8 @@ import logging
 from datetime import timedelta
 from typing import Any
 
+from bleak import BleakError
+
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.helpers.event import async_track_time_interval
@@ -93,31 +95,40 @@ class FelshareCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         except Exception:
             _LOGGER.debug("Poll status failed", exc_info=True)
 
+    async def _write(self, payload: bytes, response: bool = False) -> None:
+        """Write to device with one automatic retry on transient BLE failure."""
+        try:
+            await self._conn.write(payload, response=response)
+        except BleakError:
+            _LOGGER.debug("Command failed, retrying once after brief pause", exc_info=True)
+            await asyncio.sleep(0.3)
+            await self._conn.write(payload, response=response)
+
     # ----- command helpers -----
     async def async_request_status(self) -> None:
-        await self._conn.write(bytes_status_request())
+        await self._write(bytes_status_request())
 
     async def async_request_bulk(self) -> None:
-        await self._conn.write(bytes_bulk_request())
+        await self._write(bytes_bulk_request())
 
     async def async_set_power(self, on: bool) -> None:
-        await self._conn.write(bytes_power(on))
+        await self._write(bytes_power(on))
 
     async def async_set_fan(self, on: bool) -> None:
-        await self._conn.write(bytes_fan(on))
+        await self._write(bytes_fan(on))
 
     async def async_set_workmode(self, sh: int, sm: int, eh: int, em: int, enabled: bool, daymask: int, run_s: int, stop_s: int) -> None:
-        await self._conn.write(bytes_workmode(sh, sm, eh, em, enabled, daymask, run_s, stop_s))
+        await self._write(bytes_workmode(sh, sm, eh, em, enabled, daymask, run_s, stop_s))
 
     async def async_set_oil_name(self, name: str) -> None:
-        await self._conn.write(bytes_oil_name(name, null_term=True))
+        await self._write(bytes_oil_name(name, null_term=True))
 
     async def async_set_oil_capacity(self, cap_ml: int) -> None:
-        await self._conn.write(bytes_oil_capacity_ml(cap_ml))
+        await self._write(bytes_oil_capacity_ml(cap_ml))
 
     async def async_set_oil_remain(self, rem_ml: int) -> None:
-        await self._conn.write(bytes_oil_remain_ml(rem_ml))
+        await self._write(bytes_oil_remain_ml(rem_ml))
 
     async def async_set_oil_consumption(self, ml_per_hour: float) -> None:
         raw = int(round(float(ml_per_hour) * 10.0))
-        await self._conn.write(bytes_oil_consumption(raw))
+        await self._write(bytes_oil_consumption(raw))
